@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Autopilot — autonomous agents</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { darkMode: 'class' }
+    </script>
+    <style>
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+          Roboto, sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-neutral-950 text-neutral-200 min-h-screen">
+    <div class="mx-auto max-w-6xl px-4 py-8">
+      <!-- Header -->
+      <header class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-bold text-white">Autopilot</h1>
+          <p class="text-sm text-neutral-500">
+            Autonomous agents that run your tasks on a schedule — money-safe.
+          </p>
+        </div>
+        <div
+          id="provider-badge"
+          class="text-xs px-3 py-1.5 rounded-full bg-neutral-800 text-neutral-400"
+        >
+          …
+        </div>
+      </header>
+
+      <!-- Spend meter -->
+      <section class="mb-8 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-sm font-semibold text-neutral-300">
+            This month's spend
+          </h2>
+          <span id="spend-label" class="text-sm text-neutral-400">$0.00</span>
+        </div>
+        <div class="h-2.5 w-full rounded-full bg-neutral-800 overflow-hidden">
+          <div
+            id="spend-bar"
+            class="h-full bg-emerald-500 transition-all"
+            style="width: 0%"
+          ></div>
+        </div>
+        <p id="spend-sub" class="mt-2 text-xs text-neutral-500"></p>
+      </section>
+
+      <div class="grid gap-8 lg:grid-cols-2">
+        <!-- Tasks -->
+        <section>
+          <h2 class="text-sm font-semibold text-neutral-300 mb-3">Tasks</h2>
+
+          <form
+            id="task-form"
+            class="rounded-xl border border-neutral-800 bg-neutral-900 p-4 mb-4 space-y-3"
+          >
+            <input
+              name="name"
+              placeholder="Task name (e.g. Daily AI news digest)"
+              required
+              class="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+            />
+            <div class="flex gap-2">
+              <select
+                name="type"
+                id="type-select"
+                class="rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+              >
+                <option value="research">research</option>
+                <option value="content">content</option>
+                <option value="coding">coding</option>
+                <option value="general">general</option>
+              </select>
+              <input
+                name="cron"
+                placeholder="cron (blank = nightly)"
+                class="flex-1 rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <textarea
+              name="prompt"
+              placeholder="Instructions for the agent…"
+              required
+              rows="3"
+              class="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+            ></textarea>
+            <textarea
+              name="sources"
+              id="sources-field"
+              placeholder="Research only: one source URL per line"
+              rows="2"
+              class="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+            ></textarea>
+            <button
+              type="submit"
+              class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium py-2 transition-colors"
+            >
+              Create task
+            </button>
+          </form>
+
+          <div id="task-list" class="space-y-2"></div>
+        </section>
+
+        <!-- Live feed -->
+        <section>
+          <div class="flex items-center gap-2 mb-3">
+            <h2 class="text-sm font-semibold text-neutral-300">Live activity</h2>
+            <span class="flex h-2 w-2">
+              <span
+                class="animate-ping absolute h-2 w-2 rounded-full bg-emerald-400 opacity-75"
+              ></span>
+              <span class="rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+          </div>
+          <div id="run-feed" class="space-y-2"></div>
+        </section>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

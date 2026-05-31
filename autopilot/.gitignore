@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Runtime data (your tasks, runs, spend ledger) and agent-written files
+data/
+workspace/
+
+# Local env
+.env
