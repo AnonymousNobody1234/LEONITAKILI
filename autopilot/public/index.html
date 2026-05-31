@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Autopilot — autonomous agents</title>
+    <title>Autopilot — autonomous company builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = { darkMode: 'class' }
@@ -13,114 +13,79 @@
         font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
           Roboto, sans-serif;
       }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
     </style>
   </head>
   <body class="bg-neutral-950 text-neutral-200 min-h-screen">
-    <div class="mx-auto max-w-6xl px-4 py-8">
+    <!-- Live terminal strip (the polsia.com/live feel) -->
+    <div
+      id="terminal"
+      class="mono text-xs bg-black text-emerald-400 px-4 py-2 h-24 overflow-y-auto border-b border-neutral-800 whitespace-pre-wrap leading-relaxed"
+    >
+      &gt; Autopilot booting...
+    </div>
+
+    <div class="mx-auto max-w-6xl px-4 py-6">
       <!-- Header -->
-      <header class="flex items-center justify-between mb-8">
+      <header class="flex items-center justify-between mb-6">
         <div>
           <h1 class="text-2xl font-bold text-white">Autopilot</h1>
           <p class="text-sm text-neutral-500">
-            Autonomous agents that run your tasks on a schedule — money-safe.
+            Describe a company. It researches, writes the strategy, builds a
+            live landing page, and drafts your launch — on its own.
           </p>
         </div>
-        <div
-          id="provider-badge"
-          class="text-xs px-3 py-1.5 rounded-full bg-neutral-800 text-neutral-400"
-        >
-          …
+        <div class="flex items-center gap-3">
+          <span id="spend-badge" class="text-xs text-neutral-500"></span>
+          <span
+            id="provider-badge"
+            class="text-xs px-3 py-1.5 rounded-full bg-neutral-800 text-neutral-400"
+            >…</span
+          >
         </div>
       </header>
 
-      <!-- Spend meter -->
-      <section class="mb-8 rounded-xl border border-neutral-800 bg-neutral-900 p-5">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="text-sm font-semibold text-neutral-300">
-            This month's spend
-          </h2>
-          <span id="spend-label" class="text-sm text-neutral-400">$0.00</span>
-        </div>
-        <div class="h-2.5 w-full rounded-full bg-neutral-800 overflow-hidden">
-          <div
-            id="spend-bar"
-            class="h-full bg-emerald-500 transition-all"
-            style="width: 0%"
-          ></div>
-        </div>
-        <p id="spend-sub" class="mt-2 text-xs text-neutral-500"></p>
-      </section>
+      <!-- Launch form -->
+      <form
+        id="company-form"
+        class="rounded-xl border border-neutral-800 bg-neutral-900 p-4 mb-6 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+      >
+        <input
+          name="name"
+          placeholder="Company name (e.g. AgentRun)"
+          required
+          class="rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+        />
+        <input
+          name="audience"
+          placeholder="Audience (optional, e.g. indie founders)"
+          class="rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+        />
+        <button
+          type="submit"
+          class="rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium px-5 py-2 transition-colors whitespace-nowrap"
+        >
+          Launch company
+        </button>
+        <textarea
+          name="description"
+          placeholder="What does it do? (e.g. A tool that turns a tweet into a full blog post)"
+          required
+          rows="2"
+          class="sm:col-span-3 rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+        ></textarea>
+      </form>
 
-      <div class="grid gap-8 lg:grid-cols-2">
-        <!-- Tasks -->
-        <section>
-          <h2 class="text-sm font-semibold text-neutral-300 mb-3">Tasks</h2>
+      <!-- Company tabs -->
+      <div id="company-tabs" class="flex flex-wrap gap-2 mb-4"></div>
 
-          <form
-            id="task-form"
-            class="rounded-xl border border-neutral-800 bg-neutral-900 p-4 mb-4 space-y-3"
-          >
-            <input
-              name="name"
-              placeholder="Task name (e.g. Daily AI news digest)"
-              required
-              class="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-            />
-            <div class="flex gap-2">
-              <select
-                name="type"
-                id="type-select"
-                class="rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-              >
-                <option value="research">research</option>
-                <option value="content">content</option>
-                <option value="coding">coding</option>
-                <option value="general">general</option>
-              </select>
-              <input
-                name="cron"
-                placeholder="cron (blank = nightly)"
-                class="flex-1 rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-              />
-            </div>
-            <textarea
-              name="prompt"
-              placeholder="Instructions for the agent…"
-              required
-              rows="3"
-              class="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-            ></textarea>
-            <textarea
-              name="sources"
-              id="sources-field"
-              placeholder="Research only: one source URL per line"
-              rows="2"
-              class="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
-            ></textarea>
-            <button
-              type="submit"
-              class="w-full rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium py-2 transition-colors"
-            >
-              Create task
-            </button>
-          </form>
-
-          <div id="task-list" class="space-y-2"></div>
-        </section>
-
-        <!-- Live feed -->
-        <section>
-          <div class="flex items-center gap-2 mb-3">
-            <h2 class="text-sm font-semibold text-neutral-300">Live activity</h2>
-            <span class="flex h-2 w-2">
-              <span
-                class="animate-ping absolute h-2 w-2 rounded-full bg-emerald-400 opacity-75"
-              ></span>
-              <span class="rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-          </div>
-          <div id="run-feed" class="space-y-2"></div>
-        </section>
+      <!-- Active company dashboard -->
+      <div id="company-view" class="grid gap-5 lg:grid-cols-3">
+        <p class="text-sm text-neutral-600 lg:col-span-3">
+          No company yet — launch one above and watch it build itself.
+        </p>
       </div>
     </div>
 

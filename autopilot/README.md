@@ -1,9 +1,35 @@
 # Autopilot — a money-safe mini-Polsia
 
-A self-hostable **autonomous AI agent orchestrator**. You create tasks
-(research, content, coding, or general), and it runs them **on a schedule, on
-its own** — with a live dashboard showing every run. Inspired by
+A self-hostable **autonomous company builder**. Describe a company and it
+**researches the market, writes a strategy doc, builds a real live landing
+page, and drafts your launch email + tweet — on its own**, with a live terminal
+feed and a Documents / Website / Outreach dashboard. Inspired by
 [Polsia](https://polsia.com/), but built so it **cannot surprise-bill you**.
+
+## What it does (the "company" flow)
+
+Type a name + one sentence about the idea → hit **Launch company** → watch it
+run four chained phases automatically:
+
+1. **Investigating** — market analysis (problem, customer, differentiators)
+2. **Writing strategy** — a saved go-to-market document
+3. **Building landing page** — a real HTML page served live at `/sites/<id>`
+   you can open in a browser
+4. **Drafting outreach** — a launch email + tweet, saved as drafts for review
+
+Everything is visible on the dashboard: a live terminal log, a status panel
+with progress, and panels for the Documents, the live Website link, and the
+Outreach drafts.
+
+> Honest scope vs. Polsia: this **drafts** the email and tweet rather than
+> actually sending them or posting to X — because real email needs an API key
+> and the Twitter/X API costs ~$100/mo. The landing page, however, is genuinely
+> live. Switch to a real AI brain (below) for high-quality copy; on the free
+> `mock` brain you still get the full working flow with sensible placeholder
+> copy.
+
+You can also still use the lower-level **task** API (research / content /
+coding / general) directly — see the API section.
 
 ## Why it won't burn your money
 

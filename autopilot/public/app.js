@@ -12,13 +12,8 @@ async function api(path, opts) {
   return res.json()
 }
 
-const STATUS_STYLES = {
-  success: 'bg-emerald-900/50 text-emerald-300 border-emerald-700',
-  running: 'bg-blue-900/50 text-blue-300 border-blue-700',
-  error: 'bg-red-900/50 text-red-300 border-red-700',
-  refused: 'bg-amber-900/50 text-amber-300 border-amber-700',
-  pending: 'bg-neutral-800 text-neutral-400 border-neutral-700',
-}
+let activeCompanyId = null
+let lastLogId = null
 
 function esc(s) {
   return String(s ?? '').replace(
@@ -35,7 +30,7 @@ function timeAgo(iso) {
   return Math.floor(s / 86400) + 'd ago'
 }
 
-// ── Health / provider badge ──────────────────────────────
+// ── Header badges ────────────────────────────────────────
 async function loadHealth() {
   try {
     const h = await api('/health')
@@ -46,164 +41,239 @@ async function loadHealth() {
     $('#provider-badge').textContent = `${h.provider} · ${cap}`
   } catch {}
 }
-
-// ── Spend meter ──────────────────────────────────────────
 async function loadSpend() {
   try {
     const s = await api('/spend')
-    $('#spend-label').textContent = `$${s.spent.toFixed(4)}`
-    const pct = s.cap > 0 ? Math.min(100, (s.spent / s.cap) * 100) : 0
-    const bar = $('#spend-bar')
-    bar.style.width = pct + '%'
-    bar.className =
-      'h-full transition-all ' +
-      (pct >= 100
-        ? 'bg-red-500'
-        : pct >= 80
-          ? 'bg-amber-500'
-          : 'bg-emerald-500')
-    $('#spend-sub').textContent =
+    $('#spend-badge').textContent =
       s.cap > 0
-        ? `Cap $${s.cap.toFixed(2)} · remaining $${s.remaining.toFixed(
-            4,
-          )} · ${s.paidCalls} paid call(s) · ${s.refusedCalls} refused`
-        : `Free provider — every task costs $0. ${s.refusedCalls} refused.`
+        ? `spent $${s.spent.toFixed(4)} / $${s.cap.toFixed(2)}`
+        : 'every task $0'
   } catch {}
 }
 
-// ── Tasks ────────────────────────────────────────────────
-async function loadTasks() {
+// ── Terminal live log ────────────────────────────────────
+async function loadLogs() {
   try {
-    const tasks = await api('/tasks')
-    const el = $('#task-list')
-    if (!tasks.length) {
-      el.innerHTML =
-        '<p class="text-sm text-neutral-600 px-1">No tasks yet. Create one above.</p>'
+    const logs = await api('/logs?limit=40')
+    if (!logs.length) return
+    const term = $('#terminal')
+    term.innerHTML = logs
+      .slice()
+      .reverse()
+      .map((l) => `&gt; ${esc(l.text)}`)
+      .join('\n')
+    // autoscroll if a new event arrived
+    const newest = logs[0].id
+    if (newest !== lastLogId) {
+      lastLogId = newest
+      term.scrollTop = term.scrollHeight
+    }
+  } catch {}
+}
+
+// ── Company tabs ─────────────────────────────────────────
+const STATUS_DOT = {
+  idle: 'bg-neutral-500',
+  investigating: 'bg-amber-400 animate-pulse',
+  building: 'bg-blue-400 animate-pulse',
+  live: 'bg-emerald-500',
+  error: 'bg-red-500',
+}
+
+async function loadCompanies() {
+  try {
+    const companies = await api('/companies')
+    const tabs = $('#company-tabs')
+    if (!companies.length) {
+      tabs.innerHTML = ''
+      activeCompanyId = null
       return
     }
-    el.innerHTML = tasks
+    if (!activeCompanyId || !companies.find((c) => c.id === activeCompanyId)) {
+      activeCompanyId = companies[0].id
+    }
+    tabs.innerHTML = companies
       .map(
-        (t) => `
-      <div class="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
-        <div class="flex items-start justify-between gap-2">
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="font-medium text-white truncate">${esc(t.name)}</span>
-              <span class="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400">${t.type}</span>
-            </div>
-            <p class="text-xs text-neutral-500 mt-1 line-clamp-2">${esc(t.prompt)}</p>
-            <p class="text-[11px] text-neutral-600 mt-1">
-              cron: <code>${esc(t.cron || 'nightly default')}</code>
-              ${t.lastRunAt ? '· last run ' + timeAgo(t.lastRunAt) : '· never run'}
-            </p>
-          </div>
-          <div class="flex flex-col gap-1 shrink-0">
-            <button data-run="${t.id}" class="text-xs px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white">Run now</button>
-            <button data-del="${t.id}" class="text-xs px-3 py-1 rounded-lg bg-neutral-800 hover:bg-red-900 text-neutral-400">Delete</button>
-          </div>
-        </div>
-      </div>`,
+        (c) => `
+      <button data-tab="${c.id}" class="flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg border ${
+        c.id === activeCompanyId
+          ? 'border-emerald-600 bg-neutral-900 text-white'
+          : 'border-neutral-800 text-neutral-400 hover:text-white'
+      }">
+        <span class="h-2 w-2 rounded-full ${STATUS_DOT[c.status] || 'bg-neutral-500'}"></span>
+        ${esc(c.name)}
+      </button>`,
       )
       .join('')
   } catch {}
 }
 
-// ── Live run feed ────────────────────────────────────────
-async function loadRuns() {
+// ── Active company view ──────────────────────────────────
+const MASCOT = `  ┌────────┐
+  │  ◉  ◉  │
+  │   ▽    │
+  │  \\__/  │
+  └────────┘`
+
+function phaseRow(p) {
+  const icon =
+    p.status === 'done'
+      ? '✅'
+      : p.status === 'running'
+        ? '⏳'
+        : p.status === 'error'
+          ? '❌'
+          : '○'
+  return `<div class="flex items-start gap-2 text-sm">
+    <span>${icon}</span>
+    <div>
+      <span class="${p.status === 'pending' ? 'text-neutral-600' : 'text-neutral-200'}">${esc(p.label)}</span>
+      ${p.note ? `<span class="text-neutral-600"> — ${esc(p.note)}</span>` : ''}
+    </div>
+  </div>`
+}
+
+function artifactCard(a) {
+  const icons = { document: '📄', website: '🌐', email: '✉️', social: '🐦' }
+  const head = `<div class="flex items-center justify-between gap-2">
+      <span class="text-sm text-white truncate">${icons[a.type] || '•'} ${esc(a.title)}</span>
+      <span class="text-[10px] text-neutral-500">${timeAgo(a.createdAt)}</span>
+    </div>`
+
+  if (a.type === 'website') {
+    return `<div class="rounded-lg border border-neutral-800 bg-neutral-900 p-3">
+      ${head}
+      <div class="mt-2 flex items-center gap-2">
+        <a href="${esc(a.url)}" target="_blank" class="text-xs px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white">Open live site ↗</a>
+        <code class="text-[11px] text-neutral-500 truncate">${esc(a.url)}</code>
+      </div>
+    </div>`
+  }
+  const status =
+    a.status === 'draft'
+      ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/50 text-amber-300">draft</span>'
+      : a.status === 'sent'
+        ? '<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-900/50 text-emerald-300">sent</span>'
+        : ''
+  return `<div class="rounded-lg border border-neutral-800 bg-neutral-900 p-3">
+    ${head}
+    ${a.to ? `<p class="text-[11px] text-neutral-600 mt-1">to: ${esc(a.to)} ${status}</p>` : status ? `<p class="mt-1">${status}</p>` : ''}
+    <pre class="mt-2 text-xs text-neutral-400 whitespace-pre-wrap max-h-40 overflow-auto">${esc(a.content)}</pre>
+  </div>`
+}
+
+async function loadCompanyView() {
+  if (!activeCompanyId) {
+    $('#company-view').innerHTML =
+      '<p class="text-sm text-neutral-600 lg:col-span-3">No company yet — launch one above and watch it build itself.</p>'
+    return
+  }
   try {
-    const runs = await api('/runs?limit=30')
-    const el = $('#run-feed')
-    if (!runs.length) {
-      el.innerHTML =
-        '<p class="text-sm text-neutral-600 px-1">No activity yet. Hit “Run now” on a task.</p>'
-      return
-    }
-    el.innerHTML = runs
-      .map((r) => {
-        const style = STATUS_STYLES[r.status] || STATUS_STYLES.pending
-        const cost =
-          r.costUsd > 0 ? `$${r.costUsd.toFixed(5)}` : 'free'
-        return `
-      <div class="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
-        <div class="flex items-center justify-between gap-2 mb-1">
-          <span class="font-medium text-white text-sm truncate">${esc(r.taskName)}</span>
-          <span class="text-[10px] px-2 py-0.5 rounded-full border ${style}">${r.status}</span>
-        </div>
-        <p class="text-[11px] text-neutral-600 mb-2">
-          ${r.type} · ${r.trigger} · ${timeAgo(r.startedAt)} ·
-          ${r.promptTokens + r.completionTokens} tok · ${cost} · ${esc(r.provider)}
-        </p>
-        ${
-          r.output || r.error
-            ? `<pre class="text-xs text-neutral-400 bg-neutral-950 rounded-lg p-3 max-h-48 overflow-auto whitespace-pre-wrap">${esc(r.error || r.output)}</pre>`
-            : ''
-        }
-      </div>`
-      })
-      .join('')
+    const [company, artifacts] = await Promise.all([
+      api('/companies/' + activeCompanyId),
+      api('/artifacts?companyId=' + activeCompanyId),
+    ])
+
+    const docs = artifacts.filter((a) => a.type === 'document')
+    const sites = artifacts.filter((a) => a.type === 'website')
+    const comms = artifacts.filter(
+      (a) => a.type === 'email' || a.type === 'social',
+    )
+
+    $('#company-view').innerHTML = `
+      <!-- Status panel -->
+      <section class="rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+        <h2 class="text-sm font-semibold text-neutral-300 mb-3 flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full ${STATUS_DOT[company.status] || 'bg-neutral-500'}"></span>
+          ${esc(company.name)}
+        </h2>
+        <pre class="mono text-[10px] text-emerald-400 leading-tight mb-2">${MASCOT}</pre>
+        <p class="text-base font-medium text-white capitalize">${esc(company.status)}</p>
+        <p class="text-xs text-neutral-500 mb-4">${esc(company.statusDetail || '')}</p>
+        <div class="space-y-2">${company.phases.map(phaseRow).join('')}</div>
+        <button data-rebuild="${company.id}" class="mt-4 text-xs px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300">Rebuild</button>
+        <button data-delcompany="${company.id}" class="mt-4 text-xs px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-red-900 text-neutral-400">Delete</button>
+      </section>
+
+      <!-- Documents + Website -->
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-neutral-300">Documents</h2>
+        ${docs.length ? docs.map(artifactCard).join('') : '<p class="text-xs text-neutral-600">—</p>'}
+        <h2 class="text-sm font-semibold text-neutral-300 pt-2">Website</h2>
+        ${sites.length ? sites.map(artifactCard).join('') : '<p class="text-xs text-neutral-600">—</p>'}
+      </section>
+
+      <!-- Outreach -->
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-neutral-300">Outreach</h2>
+        ${comms.length ? comms.map(artifactCard).join('') : '<p class="text-xs text-neutral-600">—</p>'}
+      </section>
+    `
   } catch {}
 }
 
 // ── Interactions ─────────────────────────────────────────
-$('#type-select').addEventListener('change', (e) => {
-  $('#sources-field').style.display =
-    e.target.value === 'research' ? 'block' : 'none'
-})
-
-$('#task-form').addEventListener('submit', async (e) => {
+$('#company-form').addEventListener('submit', async (e) => {
   e.preventDefault()
   const f = e.target
   const body = {
     name: f.name.value.trim(),
-    type: f.type.value,
-    prompt: f.prompt.value.trim(),
-    cron: f.cron.value.trim() || undefined,
-    sources: f.sources.value
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean),
+    description: f.description.value.trim(),
+    audience: f.audience.value.trim() || undefined,
   }
+  const btn = f.querySelector('button[type=submit]')
+  btn.textContent = 'Launching…'
+  btn.disabled = true
   try {
-    await api('/tasks', { method: 'POST', body: JSON.stringify(body) })
+    const company = await api('/companies', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    activeCompanyId = company.id
     f.reset()
-    $('#sources-field').style.display = 'none'
-    loadTasks()
+    await refreshAll()
   } catch (err) {
-    alert('Could not create task: ' + err.message)
+    alert('Could not launch: ' + err.message)
   }
+  btn.textContent = 'Launch company'
+  btn.disabled = false
 })
 
 document.addEventListener('click', async (e) => {
-  const runId = e.target.getAttribute?.('data-run')
-  const delId = e.target.getAttribute?.('data-del')
-  if (runId) {
-    e.target.textContent = 'Running…'
-    e.target.disabled = true
-    try {
-      await api(`/tasks/${runId}/run`, { method: 'POST' })
-    } catch (err) {
-      alert('Run failed: ' + err.message)
-    }
-    e.target.textContent = 'Run now'
-    e.target.disabled = false
-    loadRuns()
-    loadSpend()
-    loadTasks()
+  const tab = e.target.closest?.('[data-tab]')?.getAttribute('data-tab')
+  if (tab) {
+    activeCompanyId = tab
+    loadCompanies()
+    loadCompanyView()
+    return
   }
-  if (delId) {
-    if (!confirm('Delete this task?')) return
-    await api(`/tasks/${delId}`, { method: 'DELETE' })
-    loadTasks()
+  const rebuild = e.target.getAttribute?.('data-rebuild')
+  if (rebuild) {
+    await api(`/companies/${rebuild}/build`, { method: 'POST' })
+    return
+  }
+  const del = e.target.getAttribute?.('data-delcompany')
+  if (del) {
+    if (!confirm('Delete this company and its artifacts?')) return
+    await api(`/companies/${del}`, { method: 'DELETE' })
+    activeCompanyId = null
+    await refreshAll()
   }
 })
 
-// ── Boot + polling (the live feed) ───────────────────────
-$('#sources-field').style.display = 'block' // research is default selection
-loadHealth()
-loadSpend()
-loadTasks()
-loadRuns()
-setInterval(() => {
-  loadRuns()
+// ── Boot + polling ───────────────────────────────────────
+async function refreshAll() {
+  await loadCompanies()
+  await loadCompanyView()
+  loadLogs()
   loadSpend()
-}, 4000)
+}
+
+loadHealth()
+refreshAll()
+setInterval(() => {
+  loadLogs()
+  loadCompanyView()
+  loadCompanies()
+  loadSpend()
+}, 3000)

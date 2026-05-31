@@ -3,7 +3,7 @@ import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { config } from './config.js'
-import { initStore } from './store.js'
+import { initStore, getArtifact } from './store.js'
 import { createApiRouter } from './api.js'
 import { startScheduler } from './scheduler.js'
 
@@ -17,6 +17,16 @@ async function main(): Promise<void> {
   const app = express()
   app.use(express.json({ limit: '1mb' }))
   app.use('/api', createApiRouter())
+
+  // Serve generated landing pages as real, live web pages.
+  app.get('/sites/:id', (req, res) => {
+    const a = getArtifact(req.params.id)
+    if (!a || a.type !== 'website') {
+      return res.status(404).send('Site not found')
+    }
+    res.type('html').send(a.content)
+  })
+
   app.use(express.static(publicDir))
 
   startScheduler()

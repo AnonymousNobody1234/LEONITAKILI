@@ -1,10 +1,26 @@
 import { mkdir, readFile, writeFile, rename } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import type { DbShape, MonthSpend, Run, Task } from './types.js'
+import type {
+  Artifact,
+  Company,
+  DbShape,
+  LogEvent,
+  MonthSpend,
+  Run,
+  Task,
+} from './types.js'
 
 const MAX_RUNS = 500
+const MAX_LOGS = 300
 
-let db: DbShape = { tasks: [], runs: [], spend: {} }
+let db: DbShape = {
+  tasks: [],
+  runs: [],
+  spend: {},
+  companies: [],
+  artifacts: [],
+  logs: [],
+}
 let dbFile = ''
 
 // Serialize all writes through a promise chain so concurrent run
@@ -12,7 +28,14 @@ let dbFile = ''
 let writeQueue: Promise<void> = Promise.resolve()
 
 function emptyDb(): DbShape {
-  return { tasks: [], runs: [], spend: {} }
+  return {
+    tasks: [],
+    runs: [],
+    spend: {},
+    companies: [],
+    artifacts: [],
+    logs: [],
+  }
 }
 
 async function flush(): Promise<void> {
@@ -34,6 +57,9 @@ export async function initStore(file: string): Promise<void> {
       tasks: parsed.tasks ?? [],
       runs: parsed.runs ?? [],
       spend: parsed.spend ?? {},
+      companies: parsed.companies ?? [],
+      artifacts: parsed.artifacts ?? [],
+      logs: parsed.logs ?? [],
     }
   } catch {
     db = emptyDb()
@@ -135,5 +161,82 @@ export async function setMonthSpend(
   s: MonthSpend,
 ): Promise<void> {
   db.spend[month] = s
+  await flush()
+}
+
+// ── Companies ────────────────────────────────────────────
+export function listCompanies(): Company[] {
+  return db.companies
+}
+
+export function getCompany(id: string): Company | undefined {
+  return db.companies.find((c) => c.id === id)
+}
+
+export async function addCompany(company: Company): Promise<void> {
+  db.companies.unshift(company)
+  await flush()
+}
+
+export async function updateCompany(
+  id: string,
+  patch: Partial<Company>,
+): Promise<Company | undefined> {
+  const c = getCompany(id)
+  if (!c) return undefined
+  Object.assign(c, patch, { updatedAt: new Date().toISOString() })
+  await flush()
+  return c
+}
+
+export async function deleteCompany(id: string): Promise<boolean> {
+  const before = db.companies.length
+  db.companies = db.companies.filter((c) => c.id !== id)
+  db.artifacts = db.artifacts.filter((a) => a.companyId !== id)
+  db.logs = db.logs.filter((l) => l.companyId !== id)
+  const changed = db.companies.length !== before
+  if (changed) await flush()
+  return changed
+}
+
+// ── Artifacts ────────────────────────────────────────────
+export function listArtifacts(companyId?: string): Artifact[] {
+  return companyId
+    ? db.artifacts.filter((a) => a.companyId === companyId)
+    : db.artifacts
+}
+
+export function getArtifact(id: string): Artifact | undefined {
+  return db.artifacts.find((a) => a.id === id)
+}
+
+export async function addArtifact(artifact: Artifact): Promise<void> {
+  db.artifacts.unshift(artifact)
+  await flush()
+}
+
+export async function updateArtifact(
+  id: string,
+  patch: Partial<Artifact>,
+): Promise<void> {
+  const a = getArtifact(id)
+  if (!a) return
+  Object.assign(a, patch)
+  await flush()
+}
+
+// ── Logs (the live terminal feed) ────────────────────────
+export function listLogs(limit = 60): LogEvent[] {
+  return db.logs.slice(0, limit)
+}
+
+export async function addLog(companyId: string, text: string): Promise<void> {
+  db.logs.unshift({
+    id: crypto.randomUUID(),
+    companyId,
+    text,
+    at: new Date().toISOString(),
+  })
+  if (db.logs.length > MAX_LOGS) db.logs.length = MAX_LOGS
   await flush()
 }
