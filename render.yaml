@@ -1,0 +1,22 @@
+# One-click deploy config for Render (https://render.com).
+# Render reads this automatically when you create a "Blueprint" from the repo.
+services:
+  - type: web
+    name: autopilot
+    runtime: node
+    plan: free
+    rootDir: autopilot
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      # Free, $0 brain by default. Change LLM_PROVIDER to "openai" later if you
+      # want the paid model — and it will stay under MONTHLY_USD_CAP.
+      - key: LLM_PROVIDER
+        value: mock
+      - key: MONTHLY_USD_CAP
+        value: "0"
+      - key: SCHEDULER_ENABLED
+        value: "true"
+      - key: DEFAULT_CRON
+        value: "0 3 * * *"
+      # Render sets PORT automatically; the app already reads it.
