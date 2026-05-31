@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prisma — Creative Studio</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Instrument+Serif:ital@1&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Tailwind (Play CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: { primary: '#DEDBC8' },
+            fontFamily: { serif: ['"Instrument Serif"', 'serif'] },
+          },
+        },
+      }
+    </script>
+
+    <style>
+      * {
+        font-family: 'Almarai', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+          'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #000;
+        color: #e1e0cc;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Noise textures */
+      .noise-overlay {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-repeat: repeat;
+      }
+      .bg-noise {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n2)'/%3E%3C/svg%3E");
+        background-repeat: repeat;
+      }
+
+      /* ---- Animations (replicating framer-motion) ---- */
+      .pull-word {
+        display: inline-block;
+        transform: translateY(20px);
+        opacity: 0;
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+          opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .pull-word.in {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      .fade-up {
+        transform: translateY(20px);
+        opacity: 0;
+        transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+          opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .fade-up.in {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      .card-enter {
+        transform: scale(0.95);
+        opacity: 0;
+        transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .card-enter.in {
+        transform: scale(1);
+        opacity: 1;
+      }
+
+      .about-char {
+        opacity: 0.2;
+        transition: opacity 0.1s linear;
+      }
+
+      .pull-container {
+        display: inline-flex;
+        flex-wrap: wrap;
+      }
+      .pull-container.center {
+        justify-content: center;
+      }
+      .pull-word {
+        margin-right: 0.25em;
+      }
+    </style>
+  </head>
+
+  <body class="bg-black">
+    <main class="bg-black">
+      <!-- ===================== HERO ===================== -->
+      <section class="h-screen p-4 md:p-6">
+        <div
+          class="relative h-full w-full overflow-hidden rounded-2xl md:rounded-[2rem]"
+        >
+          <video
+            autoplay
+            loop
+            muted
+            playsinline
+            class="absolute inset-0 h-full w-full object-cover"
+            src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_170732_8a9ccda6-5cff-4628-b164-059c500a2b41.mp4"
+          ></video>
+
+          <div
+            class="noise-overlay pointer-events-none absolute inset-0 opacity-[0.7] mix-blend-overlay"
+          ></div>
+          <div
+            class="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60"
+          ></div>
+
+          <!-- Navbar -->
+          <nav class="absolute left-1/2 top-0 z-20 -translate-x-1/2">
+            <div
+              class="flex items-center gap-3 rounded-b-2xl bg-black px-4 py-2 sm:gap-6 md:gap-12 md:rounded-b-3xl md:px-8 lg:gap-14"
+            >
+              <a href="#" class="navlink whitespace-nowrap text-[10px] sm:text-xs md:text-sm">Our story</a>
+              <a href="#" class="navlink whitespace-nowrap text-[10px] sm:text-xs md:text-sm">Collective</a>
+              <a href="#" class="navlink whitespace-nowrap text-[10px] sm:text-xs md:text-sm">Workshops</a>
+              <a href="#" class="navlink whitespace-nowrap text-[10px] sm:text-xs md:text-sm">Programs</a>
+              <a href="#" class="navlink whitespace-nowrap text-[10px] sm:text-xs md:text-sm">Inquiries</a>
+            </div>
+          </nav>
+
+          <!-- Hero content -->
+          <div class="absolute bottom-0 left-0 right-0 z-10 p-4 sm:p-6 md:p-10">
+            <div class="grid grid-cols-12 items-end gap-4 md:gap-6">
+              <div class="col-span-12 lg:col-span-8">
+                <div
+                  class="pull-container font-medium leading-[0.85] tracking-[-0.07em] text-[26vw] sm:text-[24vw] md:text-[22vw] lg:text-[20vw] xl:text-[19vw] 2xl:text-[20vw]"
+                  style="color: #e1e0cc"
+                >
+                  <span class="pull-word"
+                    >Prism<span class="relative inline-block"
+                      >a<span
+                        class="absolute top-[0.65em] -right-[0.3em] text-[0.31em]"
+                        >*</span
+                      ></span
+                    ></span
+                  >
+                </div>
+              </div>
+
+              <div
+                class="col-span-12 flex flex-col gap-5 lg:col-span-4 lg:pb-6"
+              >
+                <p
+                  class="fade-up text-xs text-primary/70 sm:text-sm md:text-base"
+                  style="line-height: 1.2"
+                  data-delay="0.5"
+                >
+                  Prisma is a worldwide network of visual artists, filmmakers
+                  and storytellers bound not by place, status or labels but by
+                  passion and hunger to unlock potential through our unique
+                  perspectives.
+                </p>
+
+                <button
+                  class="fade-up group flex w-fit items-center gap-2 rounded-full bg-primary py-1.5 pl-5 pr-1.5 font-medium text-black transition-all hover:gap-3"
+                  data-delay="0.7"
+                >
+                  <span class="text-sm sm:text-base">Join the lab</span>
+                  <span
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-black transition-transform group-hover:scale-110 sm:h-10 sm:w-10"
+                  >
+                    <!-- ArrowRight -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E1E0CC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== ABOUT ===================== -->
+      <section class="bg-black px-4 py-20 sm:px-6 md:py-28">
+        <div
+          class="mx-auto max-w-6xl rounded-2xl bg-[#101010] px-6 py-16 text-center sm:px-10 md:rounded-[2rem] md:px-16 md:py-24"
+        >
+          <p
+            class="mb-8 text-[10px] uppercase tracking-wide text-primary sm:text-xs"
+          >
+            Visual arts
+          </p>
+
+          <div
+            class="pull-container center mx-auto max-w-3xl text-3xl leading-[0.95] sm:text-4xl sm:leading-[0.9] md:text-5xl lg:text-6xl xl:text-7xl"
+          >
+            <span class="pull-word font-normal">I</span>
+            <span class="pull-word font-normal">am</span>
+            <span class="pull-word font-normal">Marcus</span>
+            <span class="pull-word font-normal">Chen,</span>
+            <span class="pull-word italic font-serif">a</span>
+            <span class="pull-word italic font-serif">self-taught</span>
+            <span class="pull-word italic font-serif">director.</span>
+            <span class="pull-word font-normal">I</span>
+            <span class="pull-word font-normal">have</span>
+            <span class="pull-word font-normal">skills</span>
+            <span class="pull-word font-normal">in</span>
+            <span class="pull-word font-normal">color</span>
+            <span class="pull-word font-normal">grading,</span>
+            <span class="pull-word font-normal">visual</span>
+            <span class="pull-word font-normal">effects,</span>
+            <span class="pull-word font-normal">and</span>
+            <span class="pull-word font-normal">narrative</span>
+            <span class="pull-word font-normal">design.</span>
+          </div>
+
+          <div
+            id="about-body"
+            class="mx-auto mt-12 max-w-2xl text-xs text-[#DEDBC8] sm:text-sm md:text-base"
+          >
+            Over the last seven years, I have worked with Parallax, a
+            Berlin-based production house that crafts cinema, series, and Noir
+            Studio in Paris. Together, we have created work that has earned
+            international acclaim at several major festivals.
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== FEATURES ===================== -->
+      <section class="relative min-h-screen bg-black px-4 py-20 sm:px-6 md:py-28">
+        <div
+          class="bg-noise pointer-events-none absolute inset-0 opacity-[0.15]"
+        ></div>
+
+        <div class="relative mx-auto max-w-7xl">
+          <div class="mb-12 md:mb-16">
+            <div
+              class="pull-container center text-xl font-normal sm:text-2xl md:text-3xl lg:text-4xl"
+            >
+              <span class="pull-word text-primary">Studio-grade</span>
+              <span class="pull-word text-primary">workflows</span>
+              <span class="pull-word text-primary">for</span>
+              <span class="pull-word text-primary">visionary</span>
+              <span class="pull-word text-primary">creators.</span>
+              <span class="pull-word text-gray-500">Built</span>
+              <span class="pull-word text-gray-500">for</span>
+              <span class="pull-word text-gray-500">pure</span>
+              <span class="pull-word text-gray-500">vision.</span>
+              <span class="pull-word text-gray-500">Powered</span>
+              <span class="pull-word text-gray-500">by</span>
+              <span class="pull-word text-gray-500">art.</span>
+            </div>
+          </div>
+
+          <div
+            class="grid grid-cols-1 gap-3 sm:gap-2 md:grid-cols-2 md:gap-1 lg:h-[480px] lg:grid-cols-4"
+          >
+            <!-- Card 1 - video -->
+            <div
+              class="card-enter relative min-h-[280px] overflow-hidden rounded-2xl lg:min-h-0"
+            >
+              <video
+                autoplay
+                loop
+                muted
+                playsinline
+                class="absolute inset-0 h-full w-full object-cover"
+                src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260406_133058_0504132a-0cf3-4450-a370-8ea3b05c95d4.mp4"
+              ></video>
+              <div
+                class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"
+              ></div>
+              <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
+                <p class="text-lg font-normal sm:text-xl" style="color: #e1e0cc">
+                  Your creative canvas.
+                </p>
+              </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="card-enter overflow-hidden rounded-2xl bg-[#212121]">
+              <div class="flex h-full flex-col p-5 sm:p-6">
+                <img
+                  src="https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260405_171918_4a5edc79-d78f-4637-ac8b-53c43c220606.png&w=1280&q=85"
+                  alt=""
+                  class="h-10 w-10 rounded-lg object-cover sm:h-12 sm:w-12"
+                />
+                <h3
+                  class="mt-5 flex items-baseline gap-2 text-lg font-normal text-primary sm:text-xl"
+                >
+                  Project Storyboard.
+                  <span class="text-xs text-gray-500">01</span>
+                </h3>
+                <ul class="mt-5 flex flex-col gap-3">
+                  <li class="flex items-start gap-2"><span class="check"></span><span class="text-sm text-gray-400">Visual scene sequencing</span></li>
+                  <li class="flex items-start gap-2"><span class="check"></span><span class="text-sm text-gray-400">Frame-by-frame shot planning</span></li>
+                  <li class="flex items-start gap-2"><span class="check"></span><span class="text-sm text-gray-400">Drag-and-drop composition guides</span></li>
+                  <li class="flex items-start gap-2"><span class="check"></span><span class="text-sm text-gray-400">Collaborative annotations in real time</span></li>
+                </ul>
+                <a href="#" class="learn-more mt-auto flex items-center gap-1 pt-6 text-sm text-primary transition-opacity hover:opacity-80">Learn more</a>
+              </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="card-enter overflow-hidden rounded-2xl bg-[#212121]">
+              <div class="flex h-full flex-col p-5 sm:p-6">
+                <img
+                  src="https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260405_171741_ed9845ab-f5b2-4018-8ce7-07cc01823522.png&w=1280&q=85"
+                  alt=""
+                  class="h-10 w-10 rounded-lg object-cover sm:h-12 sm:w-12"
+                />
+                <h3
+                  class="mt-5 flex items-baseline gap-2 text-lg font-normal text-primary sm:text-xl"
+                >
+                  Smart Critiques.
+                  <span class="text-xs text-gray-500">02</span>
+                </h3>
+                <ul class="mt-5 flex flex-col gap-3">
+                  <li class="flex items-start gap-2"><span class="check"></span><span class="text-sm text-gray-400">AI-driven scene analysis</span></li>
+                  <li class="flex items-start gap-2"><span class="check"></span><span class="text-sm text-gray-400">Personalized creative notes</span></li>
+                  <li class="flex items-start gap-2"><span class="check"></span><span class="text-sm text-gray-400">Seamless tool integrations</span></li>
+                </ul>
+                <a href="#" class="learn-more mt-auto flex items-center gap-1 pt-6 text-sm text-primary transition-opacity hover:opacity-80">Learn more</a>
+              </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="card-enter overflow-hidden rounded-2xl bg-[#212121]">
+              <div class="flex h-full flex-col p-5 sm:p-6">
+                <img
+                  src="https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260405_171809_f56666dc-c099-4778-ad82-9ad4f209567b.png&w=1280&q=85"
+                  alt=""
+                  class="h-10 w-10 rounded-lg object-cover sm:h-12 sm:w-12"
+                />
+                <h3
+                  class="mt-5 flex items-baseline gap-2 text-lg font-normal text-primary sm:text-xl"
+                >
+                  Immersion Capsule.
+                  <span class="text-xs text-gray-500">03</span>
+                </h3>
+                <ul class="mt-5 flex flex-col gap-3">
+                  <li class="flex items-start gap-2"><span class="check"></span><span class="text-sm text-gray-400">Automatic notification silencing</span></li>
+                  <li class="flex items-start gap-2"><span class="check"></span><span class="text-sm text-gray-400">Curated ambient soundscapes</span></li>
+                  <li class="flex items-start gap-2"><span class="check"></span><span class="text-sm text-gray-400">Smart schedule syncing</span></li>
+                </ul>
+                <a href="#" class="learn-more mt-auto flex items-center gap-1 pt-6 text-sm text-primary transition-opacity hover:opacity-80">Learn more</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // ---- Icons (inject lucide-style SVGs) ----
+      const CHECK_SVG =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 h-4 w-4 shrink-0 text-primary"><path d="M20 6 9 17l-5-5"/></svg>'
+      const ARROW_45_SVG =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 -rotate-45"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>'
+      document
+        .querySelectorAll('.check')
+        .forEach((el) => (el.outerHTML = CHECK_SVG))
+      document
+        .querySelectorAll('.learn-more')
+        .forEach((el) => (el.innerHTML = 'Learn more' + ARROW_45_SVG))
+
+      // ---- Navbar hover colors ----
+      document.querySelectorAll('.navlink').forEach((a) => {
+        a.style.color = 'rgba(225, 224, 204, 0.8)'
+        a.style.transition = 'color 0.2s'
+        a.addEventListener('mouseenter', () => (a.style.color = '#E1E0CC'))
+        a.addEventListener(
+          'mouseleave',
+          () => (a.style.color = 'rgba(225, 224, 204, 0.8)'),
+        )
+      })
+
+      // ---- Word pull-up (staggered, triggered on view) ----
+      document.querySelectorAll('.pull-container').forEach((container) => {
+        const words = container.querySelectorAll('.pull-word')
+        words.forEach((w, i) => (w.style.transitionDelay = i * 0.08 + 's'))
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((e) => {
+              if (e.isIntersecting) {
+                words.forEach((w) => w.classList.add('in'))
+                io.unobserve(e.target)
+              }
+            })
+          },
+          { threshold: 0.1 },
+        )
+        io.observe(container)
+      })
+
+      // ---- Hero fade-up elements (on load, with delay) ----
+      window.addEventListener('load', () => {
+        document.querySelectorAll('.fade-up').forEach((el) => {
+          const delay = parseFloat(el.dataset.delay || '0')
+          el.style.transitionDelay = delay + 's'
+          requestAnimationFrame(() => el.classList.add('in'))
+        })
+      })
+
+      // ---- Card entrance (staggered, triggered on view) ----
+      document.querySelectorAll('.grid .card-enter').forEach((card, i) => {
+        card.style.transitionDelay = i * 0.15 + 's'
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((e) => {
+              if (e.isIntersecting) {
+                e.target.classList.add('in')
+                io.unobserve(e.target)
+              }
+            })
+          },
+          { rootMargin: '-100px' },
+        )
+        io.observe(card)
+      })
+
+      // ---- About: scroll-linked per-character opacity reveal ----
+      const aboutBody = document.getElementById('about-body')
+      const text = aboutBody.textContent.replace(/\s+/g, ' ').trim()
+      aboutBody.textContent = ''
+      const charSpans = []
+      ;[...text].forEach((ch) => {
+        const s = document.createElement('span')
+        s.className = 'about-char'
+        s.textContent = ch
+        aboutBody.appendChild(s)
+        charSpans.push(s)
+      })
+      const total = charSpans.length
+
+      function updateAboutReveal() {
+        const rect = aboutBody.getBoundingClientRect()
+        const vh = window.innerHeight
+        // offset ['start 0.8', 'end 0.2']
+        let p =
+          (0.8 * vh - rect.top) / (0.6 * vh + rect.height)
+        p = Math.max(0, Math.min(1, p))
+        for (let i = 0; i < total; i++) {
+          const cp = i / total
+          const lo = cp - 0.1
+          const hi = cp + 0.05
+          let o
+          if (p <= lo) o = 0.2
+          else if (p >= hi) o = 1
+          else o = 0.2 + ((p - lo) / (hi - lo)) * 0.8
+          charSpans[i].style.opacity = o
+        }
+      }
+      window.addEventListener('scroll', updateAboutReveal, { passive: true })
+      window.addEventListener('resize', updateAboutReveal)
+      updateAboutReveal()
+    </script>
+  </body>
+</html>
